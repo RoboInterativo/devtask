@@ -63,8 +63,8 @@ else:
             "NAME": os.environ.get("POSTGRES_DB", "syncapp"),
             "USER": os.environ.get("POSTGRES_USER", "syncapp"),
             "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "postgres123"),
-            "HOST": "db",
-            "PORT": 5432,
+            "HOST": os.environ.get("POSTGRES_HOST", "db"),
+            "PORT": int(os.environ.get("POSTGRES_PORT", 5432),
         }
     }
 
