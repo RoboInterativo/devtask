@@ -1,70 +1,133 @@
-version: "3.8"
+name: syncapp
+
+x-app-common: &app-common
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: syncapp:local
+  env_file:
+    - .env
+  networks:
+    - backend
+  restart: unless-stopped
+  read_only: true
+  tmpfs:
+    - /tmp
+    - /run
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
 
 services:
   db:
-    image: postgres:14
-    env_file: .env
-    ports:
-      - "5432:5432"
+    image: postgres:14.11-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - pgdata:/var/lib/postgresql/data
-    restart: always
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    # порт НЕ публикуем наружу — доступ только внутри сети
 
   redis:
-    image: redis:latest
-    ports:
-      - "6379:6379"
-    restart: always
+    image: redis:7.2-bookworm
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--save", "60", "1"]
+    volumes:
+      - redisdata:/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    # порт НЕ публикуем наружу
 
   web:
-    build: .
-    env_file: .env
-    depends_on:
-      - db
-      - redis
+    <<: *app-common
+    command: ["uwsgi", "--ini", "uwsgi.ini"]
+    environment:
+      RUN_MIGRATIONS: "1"
+      RUN_COLLECTSTATIC: "1"
     volumes:
-      - ./app:/srv/syncapp/app
-      # в проде ./logs - это NFS, примонтированный на хост
       - ./logs:/var/log/app
       - static_data:/srv/syncapp/app/static
       - artifacts:/data/artifacts
-    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/api/stats/ >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    expose:
+      - "8000"
 
   worker:
-    build: .
-    command: celery -A syncapp worker -l info
-    env_file: .env
-    depends_on:
-      - web
+    <<: *app-common
+    command: ["celery", "-A", "syncapp", "worker", "-l", "info", "--concurrency=2"]
     volumes:
-      - ./app:/srv/syncapp/app
       - ./logs:/var/log/app
       - artifacts:/data/artifacts
-    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   beat:
-    build: .
-    command: celery -A syncapp beat -l info
-    env_file: .env
-    depends_on:
-      - web
+    <<: *app-common
+    command: ["celery", "-A", "syncapp", "beat", "-l", "info", "--schedule=/tmp/celerybeat-schedule"]
     volumes:
-      - ./app:/srv/syncapp/app
       - ./logs:/var/log/app
-    restart: always
+    depends_on:
+      redis:
+        condition: service_healthy
 
   nginx:
-    image: nginx:latest
+    image: nginx:1.27-bookworm
+    restart: unless-stopped
     ports:
       - "80:80"
     volumes:
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
-      - static_data:/usr/share/nginx/static
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - static_data:/usr/share/nginx/static:ro
+    networks:
+      - backend
     depends_on:
-      - web
-    restart: always
+      web:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost/ >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+networks:
+  backend:
+    driver: bridge
 
 volumes:
   pgdata:
+  redisdata:
   static_data:
   artifacts:
