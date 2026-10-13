@@ -1,0 +1,24 @@
+stages:
+  - build
+  - deploy
+
+variables:
+  DOCKER_HOST: tcp://docker:2375
+  IMAGE: harbor.example.local/syncapp/web
+
+build:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    - docker login -u admin -p Harbor12345 harbor.example.local
+    - docker build -t $IMAGE:latest .
+    - docker push $IMAGE:latest
+
+deploy:
+  stage: deploy
+  script:
+    - ssh -o StrictHostKeyChecking=no root@10.0.0.10 "cd /opt/syncapp && git pull && docker-compose pull && docker-compose up -d"
+  only:
+    - master

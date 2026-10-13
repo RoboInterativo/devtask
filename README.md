@@ -1,93 +1,142 @@
-# devops-tasks
+# Тестовое задание: DevOps-инженер (middle+)
 
+Спасибо за интерес к вакансии! Это задание — упрощённая модель нашей реальной ситуации.
+Мы не ищем идеальное решение: нам важно увидеть, **как вы думаете, расставляете приоритеты и
+аргументируете решения**.
 
+- **Ожидаемое время:** 2–3 часа чистой работы. **Срок сдачи:** 7 дней с момента получения.
+- **Язык:** русский (код, комментарии и имена файлов — как привыкли).
+- Если вы понимаете, что за 3 часа всё не успеть, — **это нормально**. Расставьте приоритеты, сделайте главное
+  и честно напишите в `SOLUTION.md`, что не сделали и почему.
 
-## Getting started
+---
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+## Контекст
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+Перед вами сервис `syncapp` — упрощённая копия нашего реального приложения для автоматизации тестирования ПО
+на виртуальных машинах. Сейчас он живёт в Docker Compose на одном сервере, а мы планируем перенос
+в self-managed Kubernetes (on-premise) и развитие CI/CD.
 
-## Add your files
+**Что делает приложение:** принимает через REST API задание на «прогон тестов», ставит его в очередь Celery,
+воркер выполняет его и пишет лог прогона, а API отдаёт этот лог по запросу.
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+**Состав:** Django REST framework (uWSGI) · Celery worker · Celery Beat · PostgreSQL · Redis · Nginx.
 
+| Эндпоинт | Назначение |
+|---|---|
+| `POST /api/jobs/` `{"name": "smoke"}` | создать задание (уходит в Celery) |
+| `GET /api/jobs/` , `GET /api/jobs/<id>/` | список / статус заданий |
+| `GET /api/jobs/<id>/log/` | лог прогона, записанный воркером |
+| `GET /api/stats/` | служебный счётчик запросов |
+
+### Как запустить как есть
+
+```bash
+docker compose up --build
+curl -X POST localhost/api/jobs/ -H 'Content-Type: application/json' -d '{"name":"smoke"}'
+curl localhost/api/jobs/
+curl localhost/api/jobs/1/log/      # через ~10 секунд
 ```
-cd existing_repo
-git remote add origin https://gitlab.robointerativo.org/sandbox/devops-tasks.git
-git branch -M main
-git push -uf origin main
-```
 
-## Integrate with your tools
+Особенности нашего боевого окружения, которые важно учитывать:
 
-- [ ] [Set up project integrations](https://gitlab.robointerativo.org/sandbox/devops-tasks/-/settings/integrations)
+- Логи приложения сейчас складываются в сетевое NFS-хранилище:
+  **NFS → точка монтирования на хосте → bind-mount в контейнер**. В задании это имитирует каталог `./logs`.
+- Логи собираются в ELK (Vector → Elasticsearch), метрики — Prometheus/Grafana.
+- Сборка и доставка — GitLab CI, GitLab Runner, образы хранятся в Harbor.
+- Целевая платформа — собственный кластер Kubernetes в закрытом контуре без облачных сервисов
+  (т.е. нет managed-БД, облачных балансировщиков и облачных дисков).
 
-## Collaborate with your team
+---
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+## Что нужно сделать
 
-## Test and Deploy
+Репозиторий, который вы получили, **намеренно несовершенен**. Ваша задача — довести его до состояния,
+пригодного для эксплуатации и переезда в Kubernetes. Находить, что именно не так, — часть задания.
 
-Use the built-in continuous integration in GitLab.
+### Часть A. Практика
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+**A1. Dockerfile.** Приведите образ в порядок так, как сделали бы это для production.
 
-***
+**A2. Docker Compose.** Исправьте `docker-compose.yml` и сопутствующие файлы так, чтобы стенд
+был воспроизводимым и безопасным. Приложение при этом должно продолжать работать.
 
-# Editing this README
+**A3. Kubernetes.** Подготовьте манифесты (формат на ваш выбор: чистый YAML, Kustomize или Helm —
+кратко обоснуйте выбор) в каталоге `k8s/` и разверните приложение в локальном кластере
+(kind / minikube / k3d / любой другой).
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+Требования:
+- запущены все компоненты приложения: API, воркер, Beat, а также доступ к нему снаружи кластера;
+- PostgreSQL и Redis допускается поднять в кластере «для стенда» — но в `SOLUTION.md` опишите, как бы вы
+  поступили в проде on-premise;
+- сценарий «создали задание → получили статус `done` → прочитали лог» должен работать;
+- приложите команды и вывод, подтверждающие, что стенд заработал (можно в `SOLUTION.md`).
 
-## Suggestions for a good README
+В процессе вы можете вносить **минимальные** изменения в код приложения, если без них нельзя.
+Каждое такое изменение опишите с объяснением в `SOLUTION.md`: что и почему вы сделали
+сами, а что в реальной жизни вы бы вынесли в задачу для команды разработки.
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+**A4. GitLab CI.** Перепишите `.gitlab-ci.yml`. Запускать его не нужно (у вас нет нашего GitLab),
+но он должен быть синтаксически корректным и отражать, как вы строите конвейер:
+сборка, проверки, публикация образа, доставка. Фиктивный адрес Harbor (`harbor.example.local`) можно
+оставить как есть.
 
-## Name
-Choose a self-explaining name for your project.
+> **Не обязательно, но будет плюсом (если останется время):** метрики и/или алерты Prometheus для приложения,
+> NetworkPolicy, PodDisruptionBudget, автомасштабирование.
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+### Часть B. Письменная часть
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+Оформите в файле `SOLUTION.md` в корне репозитория. Пишите кратко и по делу, таблицы и списки приветствуются.
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+**B1. Аудит.** Составьте список проблем, которые вы нашли в исходном репозитории (код приложения,
+Docker, Compose, CI). Для каждой проблемы укажите: *что не так → чем это опасно или мешает (в том числе при
+переезде в Kubernetes) → как исправили или что предлагаете → кто должен это сделать (DevOps / разработка)*.
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+**B2. Чеклист для разработчиков.** Составьте чеклист «готовность приложения к Kubernetes» для
+команды разработки: 10–15 конкретных проверяемых пунктов, которые разработчик может сам проверить
+перед тем, как сказать «сервис готов к деплою в кластер». Пункты должны быть сформулированы так,
+чтобы их можно было однозначно проверить, а не «следуйте best practices».
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+**B3. Логи и файловые данные.** Сейчас логи уходят в NFS через хост. Как вы организуете
+работу с логами и с файлами, которые создаёт воркер, в Kubernetes? Какие есть варианты, какой выбираете
+для нас, чем это лучше или хуже остальных и какие риски остаются?
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+**B4. Планировщик и масштабирование.** Что нужно учесть при запуске нескольких реплик
+каждого компонента? Какие компоненты можно масштабировать свободно, а какие нет, и как это обеспечить?
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+**B5. Платформа on-premise.** Какие решения вам придётся принять, чтобы запустить это приложение
+в собственном кластере в закрытом контуре (без облака)? Перечислите ключевые компоненты платформы
+и ваш выбор по каждому (хранилище, входящий трафик, доставка в кластер, секреты, наблюдаемость и т.п.),
+в одной-двух строках на пункт.
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+---
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+## Как сдавать
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+1. Создайте **свой** git-проект (GitLab или GitHub) и загрузите
+   в него исходники. Название и структуру можно менять.
+2. Историю коммитов ведите так, как вы работаете в реальной команде: небольшие осмысленные коммиты
+   с понятными сообщениями (не один коммит «всё»).
+3. В репозитории должны быть:
+   - исправленные `Dockerfile`, `docker-compose.yml`, `.gitlab-ci.yml` и сопутствующие файлы;
+   - каталог `k8s/` с манифестами;
+   - `SOLUTION.md` с частью B, подтверждением работоспособности стенда и разделом
+     «Что не сделано / что бы сделал дальше»;
+   - в `SOLUTION.md` укажите, сколько времени фактически потратили.
+4. Пришлите нам ссылку на репозиторий.
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+## Что мы будем оценивать
 
-## License
-For open source projects, say how it is licensed.
+- работоспособность и воспроизводимость результата (мы будем запускать его сами);
+- качество решений: безопасность, надёжность, поддерживаемость;
+- глубину понимания: насколько вы видите не только «что сломано», но и «почему это важно для нашего случая»;
+- способность расставлять приоритеты и честно обозначать границы своего решения;
+- ясность письменной части и аккуратность оформления.
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+Мы **не** ждём, что вы сделаете всё и идеально. Понятное, работающее и честно описанное решение
+лучше, чем громоздкое и неработающее.
+
+Если что-то в условиях непонятно — задайте вопрос. Если вопроса задать некому, сделайте разумное допущение
+и зафиксируйте его в `SOLUTION.md`.
+
+Удачи!
