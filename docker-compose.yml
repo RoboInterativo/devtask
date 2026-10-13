@@ -74,14 +74,14 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/stats/', timeout=3)"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/api/stats/', timeout=3)"]
       interval: 15s
       timeout: 5s
       retries: 5
       start_period: 30s
     expose:
       - "8000"
-
+      - "8001"
   worker:
     <<: *app-common
     command: ["celery", "-A", "syncapp", "worker", "-l", "info", "--concurrency=2"]

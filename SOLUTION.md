@@ -259,3 +259,19 @@ environment:
 Тут добавил условия в depends_on если web здоров запускаемся. и сам healthcheck
 проверяем что nginx запустился и отдаем трафик.
 Все контейнеры заведены в сеть и только nginx торчит наружу.
+
+## Сервис web
+Изменил **healthcheck** , изменил проверку на чистый **python** так как образ не содержит **curl**
+
+```yaml
+healthcheck:
+  test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/api/stats/', timeout=3)"]
+  interval: 15s
+  timeout: 5s
+  retries: 5
+  start_period: 30s
+  ```
+  Изменил **uwsgi.ini** , добавил **http socket** для **healthcheck**
+  ```
+  http-socket = :8001
+  ```
