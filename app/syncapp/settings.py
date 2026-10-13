@@ -60,11 +60,11 @@ else:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
-            "NAME": os.environ.get("POSTGRES_DB", "syncapp"),
-            "USER": os.environ.get("POSTGRES_USER", "syncapp"),
-            "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "postgres123"),
+            "NAME": os.environ.get("POSTGRES_DB"),
+            "USER": os.environ.get("POSTGRES_USER"),
+            "PASSWORD": os.environ.get("POSTGRES_PASSWORD"),
             "HOST": os.environ.get("POSTGRES_HOST", "db"),
-            "PORT": int(os.environ.get("POSTGRES_PORT", 5432),
+            "PORT": int(os.environ.get("POSTGRES_PORT", "5432")),
         }
     }
 
