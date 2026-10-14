@@ -6,8 +6,8 @@ from celery.schedules import crontab
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = "django-insecure-x7k2p9q-this-is-not-a-real-key-but-it-is-hardcoded"
-DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
-ALLOWED_HOSTS = ["*"]
+DEBUG = os.environ.get("DJANGO_DEBUG", "0") == "1"
+ALLOWED_HOSTS = [os.environ["DJANGO_ALLOWED_HOSTS"].split(),"*"]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -104,8 +104,8 @@ LOGGING = {
 }
 
 # --- Celery ---
-CELERY_BROKER_URL = "redis://redis:6379/0"
-CELERY_RESULT_BACKEND = "redis://redis:6379/0"
+CELERY_BROKER_URL =   os.environ.get("CELERY_BROKER_URL", "redis://redis:6379/0")
+CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://redis:6379/0")
 CELERY_TASK_SERIALIZER = "json"
 CELERY_BEAT_SCHEDULE = {
     "cleanup-old-artifacts": {
