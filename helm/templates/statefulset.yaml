@@ -1,0 +1,98 @@
+{{- if .Values.redis.enabled -}}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "syncapp.fullname" . }}-postgres
+  labels:
+    app: {{ include "syncapp.fullname" . }}-postgres
+
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app: {{ include "syncapp.fullname" . }}-postgres
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        app: {{ include "syncapp.fullname" . }}-postgres
+    spec:
+      terminationGracePeriodSeconds: 30
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "syncapp.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: "{{ .Values.postgres.repository }}:{{ .Values.postgres.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.pullPolicy }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.appsecret }}
+
+          ports:
+            - name: postgres
+              containerPort: {{ .Values.postgres.service.port }}
+              protocol: TCP
+
+
+          {{- with .Values.postgres.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+
+
+          volumeMounts:
+            - mountPath: {{ .Values.postgres.mountpath }}
+              name: postgresdata
+
+      volumes:
+          - name: postgresdata
+            persistentVolumeClaim:
+              claimName: {{ include "syncapp.fullname" . }}-pg
+
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "syncapp.fullname" . }}-postgres
+  labels:
+    {{- include "syncapp.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP                          # <-- всегда ClusterIP для Redis
+  ports:
+    - port: {{ .Values.postgres.service.port }}
+      targetPort: postgres                    # <-- имя порта из контейнера
+      protocol: TCP
+      name: postgres
+  selector:
+    app: {{ include "syncapp.fullname" . }}-postgres
+
+
+{{- end }}
