@@ -62,6 +62,7 @@ services:
     <<: *app-common
     command: ["uwsgi", "--ini", "uwsgi.ini"]
     environment:
+      DJANGO_ALLOWED_HOSTS: "*"
       RUN_MIGRATIONS: "1"
       RUN_COLLECTSTATIC: "1"
     volumes:
