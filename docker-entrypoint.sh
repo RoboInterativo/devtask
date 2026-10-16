@@ -22,8 +22,8 @@ wait_for() {
 : "${REDIS_HOST:=redis}"
 : "${REDIS_PORT:=6379}"
 
-wait_for "$POSTGRES_HOST" "$POSTGRES_PORT" "postgres" 60
-wait_for "$REDIS_HOST"    "$REDIS_PORT"    "redis"    60
+wait_for "$POSTGRES_HOST" "$POSTGRES_PORT" "postgres" 240
+wait_for "$REDIS_HOST"    "$REDIS_PORT"    "redis"    240
 
 if [ "${RUN_MIGRATIONS:-0}" = "1" ]; then
   echo "running migrations..."

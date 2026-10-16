@@ -1,0 +1,67 @@
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "syncapp.fullname" . }}-artifacts
+#  namespace: sandbox
+  annotations:
+    "helm.sh/resource-policy": keep
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 5G
+  storageClassName: {{ .Values.storage.artifacts.storageClassName }}
+
+status:
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 5G
+  phase: Bound
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "syncapp.fullname" . }}-logs
+#  namespace: sandbox
+  annotations:
+    "helm.sh/resource-policy": keep
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 5G
+  storageClassName: {{ .Values.storage.logs.storageClassName }}
+
+status:
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 5G
+  phase: Bound
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "syncapp.fullname" . }}-static
+#  namespace: sandbox
+  annotations:
+    "helm.sh/resource-policy": keep
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 5G
+  storageClassName: {{ .Values.storage.static.storageClassName }}
+
+status:
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 5G
+  phase: Bound

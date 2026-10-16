@@ -3,22 +3,115 @@ stages:
   - deploy
 
 variables:
-  DOCKER_HOST: tcp://docker:2375
-  IMAGE: harbor.example.local/syncapp/web
 
+
+    GIT_SUBMODULE_STRATEGY: recursive
+    GIT_SUBMODULE_FORCE_HTTPS: "true"
+    GIT_STRATEGY: clone
+    GIT_DEPTH: 0
+
+    DOCKER_AUTH_CONFIG: |
+          {
+          	"auths": {
+          		"docker-int.robointerativo.org": {
+          			"auth":  "${NEXUS}"
+          		},
+          		"docker-proxy.robointerativo.org": {
+          			"auth":  "${NEXUS}"
+          		}
+          	}
+          }
 build:
+  #
   stage: build
-  image: docker:latest
-  services:
-    - docker:dind
+  when: manual
+  # rules:
+  #   - changes:
+  #       - backend/**/*
+  image:
+    name: gcr.io/kaniko-project/executor:v1.14.0-debug
+    entrypoint: [""]
+  before_script:
+    - pwd
+    - ls -li
+    - chmod +x ./create.sh
+    - pwd && ls
+    - ./create.sh
+    - cp config.json /kaniko/.docker
+    - ls /kaniko/.docker
+
   script:
-    - docker login -u admin -p Harbor12345 harbor.example.local
-    - docker build -t $IMAGE:latest .
-    - docker push $IMAGE:latest
+    - /kaniko/executor --help
+    - /kaniko/executor
+      --context "${CI_PROJECT_DIR}"
+      --skip-tls-verify
+      --skip-tls-verify-pull
+      --dockerfile "${CI_PROJECT_DIR}/Dockerfile"
+      --destination "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+        #$CI_COMMIT_SHORT_SHA"
+    - echo $CI_COMMIT_SHORT_SHA
+
+
+
+  tags:
+    - dev
 
 deploy:
   stage: deploy
+  when: manual
+  image:
+    name: dtzar/helm-kubectl:3.14.3
+  #  name: bitnami/kubectl:1.25.11
+    #name:  docker-int.robointerativo.org/helm-kubectl:1
+
+    #
+
   script:
-    - ssh -o StrictHostKeyChecking=no root@10.0.0.10 "cd /opt/syncapp && git pull && docker-compose pull && docker-compose up -d"
-  only:
-    - master
+    - "ls -li"
+    - "pwd"
+    # - "echo TOKEN $REG_TOKEN"
+    - echo "TAG ${CI_COMMIT_REF_SLUG}"
+
+
+    - chmod +x ./create.sh
+    - ./create.sh
+
+    - kubectl config get-contexts
+    - pwd
+
+    - ls -li
+
+    - kubectl config use-context sandbox/agent_config:agent-sandbox
+    - kubectl get pod -n sandbox
+    - cd helm/ && helm upgrade --install sync -n sandbox -f values.yaml .
+
+
+  tags:
+    - dev
+
+
+
+# stages:
+#   - build
+#   - deploy
+#
+# variables:
+#   DOCKER_HOST: tcp://docker:2375
+#   IMAGE: harbor.example.local/syncapp/web
+#
+# build:
+#   stage: build
+#   image: docker:latest
+#   services:
+#     - docker:dind
+#   script:
+#     - docker login -u admin -p Harbor12345 harbor.example.local
+#     - docker build -t $IMAGE:latest .
+#     - docker push $IMAGE:latest
+#
+# deploy:
+#   stage: deploy
+#   script:
+#     - ssh -o StrictHostKeyChecking=no root@10.0.0.10 "cd /opt/syncapp && git pull && docker-compose pull && docker-compose up -d"
+#   only:
+#     - master

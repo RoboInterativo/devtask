@@ -1,0 +1,98 @@
+{{- if .Values.redis.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "syncapp.fullname" . }}-redis
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.redis.replicaCount | default 1 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app: {{ include "syncapp.fullname" . }}-redis
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        app: {{ include "syncapp.fullname" . }}-redis
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "syncapp.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: redis
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: "{{ .Values.redis.repository }}:{{ .Values.redis.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.redis.pullPolicy }}
+          args:
+            - "redis-server"
+            - "--appendonly"
+            - "yes"
+            - "--save"
+            - "60"
+            - "1"
+          ports:
+            - name: redis
+              containerPort: {{ .Values.redis.service.port }}
+              protocol: TCP
+          {{- with .Values.redis.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.redis.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+
+          volumeMounts:
+            - name: redis-data
+              mountPath: {{ include "syncapp.fullname" . }}-redis
+
+
+
+      volumes:
+        - name: redis-data
+          persistentVolumeClaim:
+            claimName:  {{ include "syncapp.fullname" . }}-redis
+
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "syncapp.fullname" . }}-redis
+  labels:
+    {{- include "syncapp.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP                          # <-- всегда ClusterIP для Redis
+  ports:
+    - port: {{ .Values.redis.service.port }}
+      targetPort: redis                    # <-- имя порта из контейнера
+      protocol: TCP
+      name: redis
+  selector:
+    app: {{ include "syncapp.fullname" . }}-redis
+{{- end }}

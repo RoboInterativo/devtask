@@ -1,0 +1,24 @@
+{{- if .Values.redis.enabled -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "syncapp.fullname" . }}-redis
+#  namespace: sandbox
+  annotations:
+    "helm.sh/resource-policy": keep
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 5G
+  storageClassName: {{ .Values.redis.storageClassName }}
+
+status:
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 5G
+  phase: Bound
+
+{{- end }}
