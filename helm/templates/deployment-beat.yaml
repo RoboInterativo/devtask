@@ -53,7 +53,7 @@ spec:
           {{- range $key, $val := .Values.env }}
           - name: {{ $key }}
             value: {{ $val | quote }}
-          {{- end }}            
+          {{- end }}
 {{- if .Values.postgres.enabled }}
           - name: POSTGRES_HOST
             value: {{ include "syncapp.fullname" . }}-postgres
@@ -64,9 +64,9 @@ spec:
           - name:  REDIS_PORT
             value: "{{ .Values.redis.service.port }}"
           - name:  CELERY_BROKER_URL
-            value: "redis://{{ include "syncapp.fullname" . }}-redis:{{ .Values.redis.service.port }}/0"
+            value: "redis://{{ include "syncapp.fullname" . }}-redis:{{ .Values.redis.service.port }}/1"
           - name: CELERY_RESULT_BACKEND
-            value: "redis://{{ include "syncapp.fullname" . }}-redis:{{ .Values.redis.service.port }}/0"
+            value: "redis://{{ include "syncapp.fullname" . }}-redis:{{ .Values.redis.service.port }}/1"
 {{- end }}
           envFrom:
             - secretRef:

@@ -75,7 +75,8 @@ spec:
               subPath: default.conf
 
             - name: csync-static
-              mountPath: /srv/syncapp/app/static
+              mountPath: /usr/share/nginx/static
+                
 
 
 

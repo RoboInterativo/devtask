@@ -15,7 +15,8 @@ image:
 
 appsecret: syncapp
 env:
-  DJANGO_ALLOWED_HOSTS: "*"
+  #DJANGO_ALLOWED_HOSTS: "*"
+  DJANGO_ALLOWED_HOSTS: "csync.robointerativo.org,localhost,127.0.0.1"
   DJANGO_SETTINGS_MODULE: "syncapp.settings"
   CELERY_WORKER_STATE_DB: "/tmp/celery-worker-state.db"
 
@@ -70,7 +71,7 @@ nginx:
     # This sets the pull policy for images.
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: latest
+    tag: 1.27-bookworm
 
   service:
     # This sets the service type more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
@@ -111,6 +112,7 @@ worker:
   resources: {}
 redis:
   enabled: true
+  replicaCount: 1
   storageClassName: nfs-student-dynamic
   repository: redis
   tag: 7.2-bookworm
@@ -136,6 +138,7 @@ redis:
     failureThreshold: 3
 postgres:
   enabled: true
+  replicaCount: 1
   storageClassName: nfs-student-dynamic
   mountpath: /var/lib/postgresql/data
   repository: postgres

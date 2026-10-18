@@ -74,9 +74,9 @@ spec:
             value: "{{ .Values.redis.service.port }}"
 
           - name:  CELERY_BROKER_URL
-            value: "redis://{{ include "syncapp.fullname" . }}-redis:{{ .Values.redis.service.port }}/0"
+            value: "redis://{{ include "syncapp.fullname" . }}-redis:{{ .Values.redis.service.port }}/1"
           - name: CELERY_RESULT_BACKEND
-            value: "redis://{{ include "syncapp.fullname" . }}-redis:{{ .Values.redis.service.port }}/0"
+            value: "redis://{{ include "syncapp.fullname" . }}-redis:{{ .Values.redis.service.port }}/1"
 {{- end }}
           envFrom:
             - secretRef:
@@ -99,7 +99,7 @@ spec:
               mountPath: /tmp
             - name: run
               mountPath: /run
-                          
+
             - name: csync-logs
               mountPath: /var/log/app
 

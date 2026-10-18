@@ -1,6 +1,6 @@
 {{- if .Values.redis.enabled -}}
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ include "syncapp.fullname" . }}-redis
 spec:
@@ -58,7 +58,7 @@ spec:
 
           volumeMounts:
             - name: redis-data
-              mountPath: {{ include "syncapp.fullname" . }}-redis
+              mountPath: /data
 
 
 

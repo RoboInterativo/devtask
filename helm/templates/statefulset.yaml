@@ -1,4 +1,4 @@
-{{- if .Values.redis.enabled -}}
+{{- if .Values.postgres.enabled -}}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -8,7 +8,7 @@ metadata:
 
 spec:
   {{- if not .Values.autoscaling.enabled }}
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.postgres.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
@@ -39,7 +39,7 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           image: "{{ .Values.postgres.repository }}:{{ .Values.postgres.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.pullPolicy }}
+          imagePullPolicy: {{ .Values.postgres.pullPolicy }}
           envFrom:
             - secretRef:
                 name: {{ .Values.appsecret }}
