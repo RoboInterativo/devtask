@@ -11,7 +11,7 @@ image:
   # This sets the pull policy for images.
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: 817be7c7
+  tag: 66f79a01
 
 appsecret: syncapp
 env:
@@ -66,6 +66,18 @@ service:
   port: 8000
   port2: 8001
 nginx:
+  livenessProbe:
+    httpGet:
+      path: /healthz
+      port: nginx
+    initialDelaySeconds: 10
+    periodSeconds: 10
+  readinessProbe:
+    httpGet:
+      path: /healthz
+      port: nginx
+    initialDelaySeconds: 5
+    periodSeconds: 10
   image:
     repository: nginx
     # This sets the pull policy for images.
@@ -91,7 +103,7 @@ readinessProbe:
     port: http
   initialDelaySeconds: 10
   periodSeconds: 10
-  
+
   # livenessProbe:
   #   httpGet:
   #     path: /
@@ -132,7 +144,6 @@ redis:
   repository: redis
   tag: 7.2-bookworm
   pullPolicy: IfNotPresent
-  replicaCount: 1
   service:
     type: ClusterIP
     port: 6379
@@ -159,7 +170,6 @@ postgres:
   repository: postgres
   pullPolicy: IfNotPresent
   tag: 14.11-bookworm
-  replicaCount: 1
   service:
     type: ClusterIP
     port: 5432
