@@ -110,6 +110,8 @@ storage:
     storageClassName: nfs-student-dynamic
 worker:
   resources: {}
+beat:
+  resources: {}
 redis:
   enabled: true
   replicaCount: 1

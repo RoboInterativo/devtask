@@ -43,6 +43,8 @@ spec:
             - "--save"
             - "60"
             - "1"
+            - "--dir"
+            - "/data"
           ports:
             - name: redis
               containerPort: {{ .Values.redis.service.port }}

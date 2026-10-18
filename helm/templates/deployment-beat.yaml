@@ -5,9 +5,12 @@ metadata:
   labels:
     {{- include "syncapp.labels" . | nindent 4 }}
 spec:
-  {{- if not .Values.autoscaling.enabled }}
-  replicas: {{ .Values.replicaCount }}
-  {{- end }}
+
+  replicas: 1
+  strategy:
+    type: Recreate
+
+
   selector:
     matchLabels:
       {{- include "syncapp.selectorLabels" . | nindent 6 }}
@@ -64,14 +67,14 @@ spec:
           - name:  REDIS_PORT
             value: "{{ .Values.redis.service.port }}"
           - name:  CELERY_BROKER_URL
-            value: "redis://{{ include "syncapp.fullname" . }}-redis:{{ .Values.redis.service.port }}/1"
+            value: "redis://{{ include "syncapp.fullname" . }}-redis:{{ .Values.redis.service.port }}/0"
           - name: CELERY_RESULT_BACKEND
             value: "redis://{{ include "syncapp.fullname" . }}-redis:{{ .Values.redis.service.port }}/1"
 {{- end }}
           envFrom:
             - secretRef:
                 name: {{ .Values.appsecret }}
-          {{- with .Values.worker.resources }}
+          {{- with .Values.beat.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
