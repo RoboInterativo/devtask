@@ -16,7 +16,7 @@ image:
 appsecret: syncapp
 env:
   #DJANGO_ALLOWED_HOSTS: "*"
-  DJANGO_ALLOWED_HOSTS: "csync.robointerativo.org,localhost,127.0.0.1"
+  DJANGO_ALLOWED_HOSTS: "csync.robointerativo.org,localhost,127.0.0.1,sync-syncapp,"
   DJANGO_SETTINGS_MODULE: "syncapp.settings"
   CELERY_WORKER_STATE_DB: "/tmp/celery-worker-state.db"
 
