@@ -1,6 +1,6 @@
 stages:
-  # - lint
-  # - test
+  - lint
+  - test
   - build
   # - scan
   - deploy
@@ -29,53 +29,53 @@ variables:
           }
 
 # ---------- Lint ----------
-# lint:
-#   stage: lint
-#   image: python:3.11-slim-bookworm
-#   before_script:
-#     - pip install --no-cache-dir ruff black
-#   script:
-#     - ruff check app/ || true
-#     - black --check app/ || true
-#   rules:
-#     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-#     - if: $CI_COMMIT_BRANCH == "main"
-#   tags:
-#     - dev
-#
-# # ---------- Test ----------
-# test:
-#   stage: test
-#   image: python:3.11-slim-bookworm
-#   services:
-#     - name: postgres:14.11-bookworm
-#       alias: db
-#     - name: redis:7.2-bookworm
-#       alias: redis
-#   variables:
-#     POSTGRES_DB: syncapp
-#     POSTGRES_USER: syncapp
-#     POSTGRES_PASSWORD: syncapp
-#     POSTGRES_HOST: db
-#     POSTGRES_PORT: "5432"
-#     REDIS_HOST: redis
-#     REDIS_PORT: "6379"
-#     CELERY_BROKER_URL: "redis://redis:6379/0"
-#     CELERY_RESULT_BACKEND: "redis://redis:6379/1"
-#     DJANGO_SETTINGS_MODULE: "syncapp.settings"
-#     DJANGO_SECRET: "test-key-not-for-prod"
-#     DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1"
-#     CELERY_WORKER_STATE_DB: "/tmp/celery-worker-state.db"
-#   before_script:
-#     - apt-get update && apt-get install -y --no-install-recommends build-essential libpq-dev
-#     - pip install --no-cache-dir -r app/requirements.txt
-#   script:
-#     - cd app && python manage.py test || true
-#   rules:
-#     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-#     - if: $CI_COMMIT_BRANCH == "main"
-#   tags:
-#     - dev
+lint:
+  stage: lint
+  image: python:3.11-slim-bookworm
+  before_script:
+    - pip install --no-cache-dir ruff black
+  script:
+    - ruff check app/ || true
+    - black --check app/ || true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+  tags:
+    - dev
+
+# ---------- Test ----------
+test:
+  stage: test
+  image: python:3.11-slim-bookworm
+  services:
+    - name: postgres:14.11-bookworm
+      alias: db
+    - name: redis:7.2-bookworm
+      alias: redis
+  variables:
+    POSTGRES_DB: syncapp
+    POSTGRES_USER: syncapp
+    POSTGRES_PASSWORD: syncapp
+    POSTGRES_HOST: db
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis
+    REDIS_PORT: "6379"
+    CELERY_BROKER_URL: "redis://redis:6379/0"
+    CELERY_RESULT_BACKEND: "redis://redis:6379/1"
+    DJANGO_SETTINGS_MODULE: "syncapp.settings"
+    DJANGO_SECRET: "test-key-not-for-prod"
+    DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1"
+    CELERY_WORKER_STATE_DB: "/tmp/celery-worker-state.db"
+  before_script:
+    - apt-get update && apt-get install -y --no-install-recommends build-essential libpq-dev
+    - pip install --no-cache-dir -r app/requirements.txt
+  script:
+    - cd app && python manage.py test || true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+  tags:
+    - dev
 
 build:
   #
@@ -161,36 +161,9 @@ deploy:
 
     - kubectl config use-context sandbox/agent_config:agent-sandbox
     - kubectl get pod -n sandbox
-    # - cd helm/ && helm upgrade --install sync -n sandbox  --set image.tag=$CI_COMMIT_REF_SLUG --set image.repository=$CI_REGISTRY_IMAGE -f values.yaml .
-    - cd helm/ && helm upgrade --install sync -n sandbox  -f values.yaml .
+    - cd helm/ && helm upgrade --install sync -n sandbox  --set image.tag=$CI_COMMIT_REF_SLUG --set image.repository=$CI_REGISTRY_IMAGE -f values.yaml .
+    #- cd helm/ && helm upgrade --install sync -n sandbox  -f values.yaml .
 
 
   tags:
     - dev
-
-
-
-# stages:
-#   - build
-#   - deploy
-#
-# variables:
-#   DOCKER_HOST: tcp://docker:2375
-#   IMAGE: harbor.example.local/syncapp/web
-#
-# build:
-#   stage: build
-#   image: docker:latest
-#   services:
-#     - docker:dind
-#   script:
-#     - docker login -u admin -p Harbor12345 harbor.example.local
-#     - docker build -t $IMAGE:latest .
-#     - docker push $IMAGE:latest
-#
-# deploy:
-#   stage: deploy
-#   script:
-#     - ssh -o StrictHostKeyChecking=no root@10.0.0.10 "cd /opt/syncapp && git pull && docker-compose pull && docker-compose up -d"
-#   only:
-#     - master
