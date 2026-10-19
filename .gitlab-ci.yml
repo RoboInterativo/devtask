@@ -16,6 +16,9 @@ variables:
     DOCKER_AUTH_CONFIG: |
           {
           	"auths": {
+          		"registry.robointerativo.org": {
+          			"auth":  "${GITLAB}"
+          		},
           		"docker-int.robointerativo.org": {
           			"auth":  "${NEXUS}"
           		},
