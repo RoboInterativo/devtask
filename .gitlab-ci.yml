@@ -2,6 +2,7 @@ stages:
   - lint
   - test
   - build
+  - scan
   - deploy
 
 variables:
