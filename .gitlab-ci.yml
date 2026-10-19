@@ -108,6 +108,26 @@ build:
   tags:
     - dev
 
+# ---------- Scan ----------
+scan:
+  stage: scan
+  when: manual
+  image:
+    name: aquasec/trivy:0.57.1
+    entrypoint: [""]
+  script:
+    - trivy image
+      --exit-code 0
+      --severity HIGH,CRITICAL
+      --no-progress
+      "${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA}"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_TAG
+  tags:
+    - dev
+
+
 deploy:
   stage: deploy
   when: manual
@@ -115,7 +135,9 @@ deploy:
     name: dtzar/helm-kubectl:3.14.3
   #  name: bitnami/kubectl:1.25.11
     #name:  docker-int.robointerativo.org/helm-kubectl:1
-
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_TAG
     #
 
   script:
@@ -135,7 +157,7 @@ deploy:
 
     - kubectl config use-context sandbox/agent_config:agent-sandbox
     - kubectl get pod -n sandbox
-    - cd helm/ && helm upgrade --install sync -n sandbox -f values.yaml .
+    - cd helm/ && helm upgrade --install sync -n sandbox  --set image.tag=$CI_COMMIT_REF_SLUG --set image.repository=$CI_REGISTRY_IMAGE -f values.yaml .
 
 
   tags:
