@@ -16,13 +16,29 @@ wait_for() {
     sleep 1
   done
 }
+wait_for_pg() {
+  host="$1"; port="$2"; timeout="${3:-120}"
+  i=0
+  until pg_isready -h "$host" -p "$port" -q; do
+    i=$((i+1))
+    if [ "$i" -ge "$timeout" ]; then
+      echo "ERROR: postgres ($host:$port) not ready after ${timeout}s" >&2
+      exit 1
+    fi
+    echo "waiting for postgres ($host:$port)... ${i}s"
+    sleep 1
+  done
+}
+
+
 
 : "${POSTGRES_HOST:=db}"
 : "${POSTGRES_PORT:=5432}"
 : "${REDIS_HOST:=redis}"
 : "${REDIS_PORT:=6379}"
 
-wait_for "$POSTGRES_HOST" "$POSTGRES_PORT" "postgres" 240
+# wait_for "$POSTGRES_HOST" "$POSTGRES_PORT" "postgres" 240
+wait_for_pg "$POSTGRES_HOST" "$POSTGRES_PORT" 240
 wait_for "$REDIS_HOST"    "$REDIS_PORT"    "redis"    240
 
 if [ "${RUN_MIGRATIONS:-0}" = "1" ]; then

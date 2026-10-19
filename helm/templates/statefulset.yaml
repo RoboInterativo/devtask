@@ -10,6 +10,16 @@ spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.postgres.replicaCount }}
   {{- end }}
+  serviceName: {{ include "syncapp.fullname" . }}-postgres
+  volumeClaimTemplates:
+    - metadata:
+        name: postgresdata
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: {{ .Values.postgres.storageClassName }}
+        resources:
+          requests:
+            storage: 10Gi
   selector:
     matchLabels:
       app: {{ include "syncapp.fullname" . }}-postgres
@@ -40,6 +50,12 @@ spec:
           {{- end }}
           image: "{{ .Values.postgres.repository }}:{{ .Values.postgres.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.postgres.pullPolicy }}
+          env:
+            - name: POSTGRES_HOST_AUTH_METHOD
+              value: "trust"
+            # - name: POSTGRES_INITDB_ARGS
+            #   value: "--auth-host=scram-sha-256"
+
           envFrom:
             - secretRef:
                 name: {{ .Values.appsecret }}
@@ -60,10 +76,10 @@ spec:
             - mountPath: {{ .Values.postgres.mountpath }}
               name: postgresdata
 
-      volumes:
-          - name: postgresdata
-            persistentVolumeClaim:
-              claimName: {{ include "syncapp.fullname" . }}-pg
+      # volumes:
+      #     - name: postgresdata
+      #       persistentVolumeClaim:
+      #         claimName: {{ include "syncapp.fullname" . }}-pg
 
       {{- with .Values.nodeSelector }}
       nodeSelector:
@@ -85,7 +101,8 @@ metadata:
   labels:
     {{- include "syncapp.labels" . | nindent 4 }}
 spec:
-  type: ClusterIP                          # <-- всегда ClusterIP для Redis
+  #type: ClusterIP                          # <-- всегда ClusterIP для Redis
+  clusterIP: None
   ports:
     - port: {{ .Values.postgres.service.port }}
       targetPort: postgres                    # <-- имя порта из контейнера

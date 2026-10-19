@@ -11,12 +11,12 @@ image:
   # This sets the pull policy for images.
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: 66f79a01
+  tag: c2323ba3
 
 appsecret: syncapp
 env:
-  #DJANGO_ALLOWED_HOSTS: "*"
-  DJANGO_ALLOWED_HOSTS: "csync.robointerativo.org,localhost,127.0.0.1,sync-syncapp,"
+  DJANGO_ALLOWED_HOSTS: "*"
+  #DJANGO_ALLOWED_HOSTS: "csync.robointerativo.org,localhost,127.0.0.1,sync-syncapp,"
   DJANGO_SETTINGS_MODULE: "syncapp.settings"
   CELERY_WORKER_STATE_DB: "/tmp/celery-worker-state.db"
 
@@ -166,7 +166,8 @@ postgres:
   enabled: true
   replicaCount: 1
   storageClassName: nfs-student-dynamic
-  mountpath: /var/lib/postgresql/data
+  mountpath: /var/lib/postgresql
+  #/data
   repository: postgres
   pullPolicy: IfNotPresent
   tag: 14.11-bookworm

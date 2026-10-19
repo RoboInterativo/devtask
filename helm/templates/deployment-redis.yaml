@@ -4,6 +4,18 @@ kind: StatefulSet
 metadata:
   name: {{ include "syncapp.fullname" . }}-redis
 spec:
+  volumeClaimTemplates:
+    - metadata:
+        name: redis-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: {{ .Values.redis.storageClassName }}
+        resources:
+          requests:
+            storage: 5Gi  
+
+  serviceName: {{ include "syncapp.fullname" . }}-redis
+
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.redis.replicaCount | default 1 }}
   {{- end }}
@@ -64,10 +76,13 @@ spec:
 
 
 
-      volumes:
-        - name: redis-data
-          persistentVolumeClaim:
-            claimName:  {{ include "syncapp.fullname" . }}-redis
+      # volumes:
+      #   - name: redis-data
+      #     persistentVolumeClaim:
+      #       claimName:  {{ include "syncapp.fullname" . }}-redis
+
+
+
 
       {{- with .Values.nodeSelector }}
       nodeSelector:
@@ -89,7 +104,8 @@ metadata:
   labels:
     {{- include "syncapp.labels" . | nindent 4 }}
 spec:
-  type: ClusterIP                          # <-- всегда ClusterIP для Redis
+  #type: ClusterIP                          # <-- всегда ClusterIP для Redis
+  clusterIP: None
   ports:
     - port: {{ .Values.redis.service.port }}
       targetPort: redis                    # <-- имя порта из контейнера

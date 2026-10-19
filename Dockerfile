@@ -23,11 +23,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PATH="/usr/local/bin:${PATH}"
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        libpq5 \
-    && rm -rf /var/lib/apt/lists/* \
-    && groupadd -r app && useradd -r -g app -d /srv/syncapp -s /sbin/nologin app
+# RUN apt-get update && apt-get install -y --no-install-recommends \
+#         libpq5 \
+#     && rm -rf /var/lib/apt/lists/* \
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+            libpq5 \
+            postgresql-client \
+        && rm -rf /var/lib/apt/lists/* \
+        && groupadd -r app && useradd -r -g app -d /srv/syncapp -s /sbin/nologin app
 COPY --from=builder /install /usr/local
 
 WORKDIR /srv/syncapp
